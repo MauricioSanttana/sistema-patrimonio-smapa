@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Patrimonial SMAPA</title>
+    <link rel="stylesheet" href="css/estilo.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+    <!-- Sistema Principal -->
+    <div id="sistemaPrincipal" class="container">
+        <div class="header">
+            <div class="header-content">
+                <div>
+                    <h1>SISTEMA DE CONTROLE PATRIMONIAL</h1>
+                    <p class="subtitle">SECRETARIA MUNICIPAL DO MEIO AMBIENTE E PROTEÇÃO ANIMAL</p>
+                    <p class="subtitle">PREFEITURA MUNICIPAL DE MOGI DAS CRUZES - SP</p>
+                </div>
+                <div class="header-actions">
+                    <button onclick="abrirConfiguracoes()" class="btn-config">⚙️ Configurações</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="toolbar">
+            <div class="filters">
+                <input type="text" id="busca" placeholder="🔍 Buscar tombamento, descrição, responsável..." onkeyup="filtrarTabela()">
+                <select id="categoria" onchange="filtrarTabela()">
+                    <option value="">Todas categorias</option>
+                    <option value="Equipamento TI">Equipamento TI</option>
+                    <option value="Veículos">Veículos</option>
+                    <option value="Mobiliário">Mobiliário</option>
+                    <option value="Equipamentos Médicos">Equipamentos Médicos</option>
+                    <option value="Eletrodomésticos">Eletrodomésticos</option>
+                    <option value="Comunicação">Comunicação</option>
+                    <option value="Audiovisual">Audiovisual</option>
+                    <option value="Outros">Outros</option>
+                </select>
+                <button onclick="abrirModalAdicionar()" class="btn-adicionar">➕ Adicionar Item</button>
+                <button onclick="exportarExcel()">📊 Exportar Excel</button>
+                <button onclick="gerarRelatorio()">📋 Relatório</button>
+                <button onclick="limparFiltros()">🔄 Limpar Filtros</button>
+            </div>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-item">
+                <span class="stat-number" id="totalItens">0</span>
+                <span class="stat-label">Total Itens</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number" id="totalAtivos">0</span>
+                <span class="stat-label">Ativos</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number" id="totalManutencao">0</span>
+                <span class="stat-label">Manutenção</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number" id="totalCategorias">0</span>
+                <span class="stat-label">Categorias</span>
+            </div>
+        </div>
+        
+        <div class="table-container">
+            <table id="tabelaPatrimonio">
+                <thead>
+                    <tr>
+                        <th>Tombamento</th>
+                        <th>Descrição</th>
+                        <th>Categoria</th>
+                        <th>Data Aquisição</th>
+                        <th>Setor</th>
+                        <th>Responsável</th>
+                        <th>Localização</th>
+                        <th>Situação</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="corpoTabela">
+                </tbody>
+            </table>
+        </div>
+
+        <div class="footer">
+            <p>Sistema desenvolvido MAURICIO SANTANA - RGF: 14.145 - Versão 2.0</p>
+            <p>2024 | Última atualização: <span id="dataAtualizacao"></span></p>
+        </div>
+    </div>
+
+    <!-- Modal Adicionar/Editar Item -->
+    <div id="modalItem" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitulo">Adicionar Novo Item</h2>
+                <span class="close" onclick="fecharModal()">&times;</span>
+            </div>
+            <form id="formItem" onsubmit="return salvarItem(event)">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Tombamento *</label>
+                        <input type="text" id="inputTombamento" required placeholder="Ex: SMAPA-2024-001">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Categoria *</label>
+                        <select id="inputCategoria" required>
+                            <option value="">Selecione...</option>
+                            <option value="Equipamento TI">Equipamento TI</option>
+                            <option value="Veículos">Veículos</option>
+                            <option value="Mobiliário">Mobiliário</option>
+                            <option value="Equipamentos Médicos">Equipamentos Médicos</option>
+                            <option value="Eletrodomésticos">Eletrodomésticos</option>
+                            <option value="Comunicação">Comunicação</option>
+                            <option value="Audiovisual">Audiovisual</option>
+                            <option value="Outros">Outros</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group full-width">
+                        <label>Descrição *</label>
+                        <input type="text" id="inputDescricao" required placeholder="Ex: Notebook Dell Inspiron 15">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Data de Aquisição *</label>
+                        <input type="date" id="inputData" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Situação *</label>
+                        <select id="inputSituacao" required>
+                            <option value="Ativo">Ativo</option>
+                            <option value="Manutenção">Manutenção</option>
+                            <option value="Inativo">Inativo</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Setor *</label>
+                        <input type="text" id="inputSetor" required placeholder="Ex: Administração">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Responsável *</label>
+                        <input type="text" id="inputResponsavel" required placeholder="Ex: João Silva">
+                    </div>
+                    
+                    <div class="form-group full-width">
+                        <label>Localização Específica *</label>
+                        <input type="text" id="inputLocalizacao" required placeholder="Ex: Sala 101 - Mesa 3">
+                    </div>
+                    
+                    <div class="form-group full-width">
+                        <label>Observações</label>
+                        <textarea id="inputObservacoes" rows="3" placeholder="Informações adicionais (opcional)"></textarea>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" onclick="fecharModal()" class="btn-cancelar">Cancelar</button>
+                    <button type="submit" class="btn-salvar">💾 Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Configurações -->
+    <div id="modalConfig" class="modal">
+        <div class="modal-content modal-config">
+            <div class="modal-header">
+                <h2>⚙️ Configurações do Sistema</h2>
+                <span class="close" onclick="fecharModalConfig()">&times;</span>
+            </div>
+
+            <div class="config-section">
+                <h3>💾 Backup e Dados</h3>
+                <button onclick="exportarBackup()" class="btn-backup">📥 Fazer Backup dos Dados</button>
+                <button onclick="document.getElementById('inputBackup').click()" class="btn-restore">📤 Restaurar Backup</button>
+                <input type="file" id="inputBackup" accept=".json" style="display:none" onchange="importarBackup(event)">
+                <button onclick="limparTodosDados()" class="btn-danger">🗑️ Limpar Todos os Dados</button>
+            </div>
+
+            <div class="config-section">
+                <h3>ℹ️ Informações do Sistema</h3>
+                <p><strong>Versão:</strong> 2.0</p>
+                <p><strong>Itens cadastrados:</strong> <span id="infoTotalItens">0</span></p>
+                <p><strong>Último acesso:</strong> <span id="infoUltimoAcesso">-</span></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="dados/patrimonio.js"></script>
+    <script src="js/funcoes.js"></script>
+</body>
+</html>
